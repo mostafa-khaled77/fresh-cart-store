@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "FreshCart | Your Premier Online Shopping Destination",
+  icons: {
+    icon: "/icon.png",
+  },
   description: "Experience seamless shopping with FreshCart. Discover the latest trends, top brands, and exclusive deals all in one place.",
 };
 
