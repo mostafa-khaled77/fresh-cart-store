@@ -8,8 +8,6 @@ interface CategoryPageProps {
 }
 export default async function CategoryDetails({ params }: CategoryPageProps) {
   const { _id } = await params; 
-  console.log(_id)
-  
   const data: Category = await getSpecificCategotries(_id);
 
   return (

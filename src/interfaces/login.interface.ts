@@ -10,7 +10,9 @@ export interface SuccessLogin {
 }
 
 export interface UserInterface {
+    id?: string;
     name: string;
     email: string;
     role: string;
+    phone?: string;
 }

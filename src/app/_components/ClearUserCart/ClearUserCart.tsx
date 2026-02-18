@@ -12,7 +12,7 @@ export default function ClearUserCart({cartId}:{cartId:string}) {
    async function handleClear() {
     try {
         setIsLoading(true);
-        let res = await clearCart(cartId);
+        let res = await clearCart();
         if (res.status === "success" || res.message === "success") {
             toast.success("Cart cleared successfully!");
             setCartCount(0); 

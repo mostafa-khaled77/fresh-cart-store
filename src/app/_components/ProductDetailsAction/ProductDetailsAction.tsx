@@ -1,6 +1,6 @@
 'use client'
 import { addToCart } from "@/app/_actions/cart.actions";
-import { AddProductToWishlist } from "@/app/_actions/wishlist.actions";
+import { AddProductToWishlist, removeProductFromWishlist } from "@/app/_actions/wishlist.actions";
 import { Button } from "@/components/ui/button";
 import { CartContext, CartContextType } from "@/context/CartContext";
 import { WishListContext, WishListContextType } from "@/context/WishListContext";
@@ -14,7 +14,9 @@ export default function ProductDetailsAction({ id }: { id: string }) {
   const [isLoadingHeart, setIsLoadingHeart] = React.useState(false);
   
   const { setCartCount } = useContext(CartContext) as CartContextType;
-  const { setWishListCount } = useContext(WishListContext) as WishListContextType;
+  const { setWishListCount, wishList, setWishList } = useContext(WishListContext) as WishListContextType;
+
+  const isInWishlist = wishList.includes(id);
 
   async function handleAddToCart() {
     setIsLoading(true);
@@ -22,7 +24,9 @@ export default function ProductDetailsAction({ id }: { id: string }) {
       const response: CartResponse = await addToCart(id);
       if (response.status === 'success') {
         toast.success("Added to cart successfully! 🛒");
-        setCartCount(response.numOfCartItems);
+        if (response.numOfCartItems !== undefined) {
+          setCartCount(response.numOfCartItems);
+        }
       } else {
         toast.error(response.message || "Failed To Add");
       }
@@ -34,27 +38,46 @@ export default function ProductDetailsAction({ id }: { id: string }) {
   }
 
    async function handleAddToWishList() {
-  setIsLoadingHeart(true);
-  try {
-    const data = await AddProductToWishlist(id);
-    if (data.status === 'success') {
-      const newCount = data.count || (data.data ? data.data.length : undefined);
-      if (newCount !== undefined) {
-        setWishListCount(newCount);
+    setIsLoadingHeart(true);
+    try {
+      if (isInWishlist) {
+        // Remove from wishlist
+        const res = await removeProductFromWishlist(id);
+        if (res && (res.status === 'success' || res.count !== undefined)) { // check for success based on typical response
+            // The remove action usually returns the new list or we filter locally
+            // Let's rely on the response if possible, or filter locally if the response is just a count/message
+            // Taking a safe approach: filter locally to be immediate
+            const newWishList = wishList.filter(itemId => itemId !== id);
+            setWishList(newWishList);
+            setWishListCount(prev => prev - 1);
+            toast.success("Removed from favorites", {
+                style: { background: "#fef2f2", color: "#991b1b", border: "1px solid #fee2e2" }
+            });
+        } else {
+             toast.error("Failed to remove");
+        }
+      } else {
+        // Add to wishlist
+        const data = await AddProductToWishlist(id);
+        if (data.status === 'success') {
+          if (data.data && Array.isArray(data.data)) {
+            setWishListCount(data.data.length);
+            setWishList(data.data);
+          }
+          toast.success("Added to your favorites! ❤️", {
+            description: "We'll keep it safe for you.",
+            style: { background: "#fef2f2", color: "#991b1b", border: "1px solid #fee2e2" }
+          });
+        } else {
+          toast.error(data.message || "Failed To Add");
+        }
       }
-      toast.success("Added to your favorites! ❤️", {
-        description: "We'll keep it safe for you.",
-        style: { background: "#fef2f2", color: "#991b1b", border: "1px solid #fee2e2" }
-      });
-    } else {
-      toast.error(data.message || "Failed To Add");
+    } catch (error) {
+      toast.error("Something went wrong");
+    } finally {
+      setIsLoadingHeart(false);
     }
-  } catch (error) {
-    toast.error("Something went wrong");
-  } finally {
-    setIsLoadingHeart(false);
   }
-}
   
 
   return (
@@ -69,8 +92,12 @@ export default function ProductDetailsAction({ id }: { id: string }) {
         Add to Cart
       </Button>
 
-       <Button disabled={isLoadingHeart} onClick={handleAddToWishList} className="flex bg-white cursor-pointer items-center justify-center w-10 h-10 border border-gray-200 rounded-xl text-gray-400 hover:border-red-500 hover:bg-red-50 hover:text-red-500 transition-all duration-300">
-            {isLoadingHeart ? <Loader2 size={20} className="animate-spin text-red-500" /> : <i className="fa-regular fa-heart"></i>}
+       <Button disabled={isLoadingHeart} onClick={handleAddToWishList} className={`flex cursor-pointer items-center justify-center w-10 h-10 border rounded-xl transition-all duration-300 ${
+          isInWishlist 
+            ? "bg-red-50 border-red-500 text-red-500" 
+            : "bg-white border-gray-200 text-gray-400 hover:border-red-500 hover:bg-red-50 hover:text-red-500"
+        }`}>
+            {isLoadingHeart ? <Loader2 size={20} className="animate-spin text-red-500" /> : <i className={`fa-heart ${isInWishlist ? "fa-solid" : "fa-regular"}`}></i>}
         </Button>
     </div>
   );

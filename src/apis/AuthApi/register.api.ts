@@ -4,7 +4,7 @@ import { RegisterValues } from '@/schema/Register.schema';
 
 export default async function RegisterUser(values: RegisterValues,): Promise<RegisterResponse> {
   const res = await fetch(
-    `${process.env.BASE_URL}/auth/signup`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/auth/signup`,
     {
       method: "POST",
       headers: {

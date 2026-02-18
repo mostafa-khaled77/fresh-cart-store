@@ -12,9 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  UserRound, LogOut, User, Heart, ShoppingBag, 
-  Headset, Package, LogIn, UserPlus 
+import {
+  UserRound, LogOut, User, Heart, ShoppingBag,
+  Headset, Package, LogIn, UserPlus, Loader2,
+  MapPin
 } from "lucide-react";
 import { CartContext, CartContextType } from "@/context/CartContext";
 import { WishListContext, WishListContextType } from "@/context/WishListContext";
@@ -25,8 +26,8 @@ export default function Navbar() {
   const path = usePathname();
   const { data: session, status } = useSession();
 
-  const { cartCount } = useContext(CartContext) as CartContextType;
-  const { wishListCount } = useContext(WishListContext) as WishListContextType;
+  const { cartCount, isLoading: isCartLoading } = useContext(CartContext) as CartContextType;
+  const { wishListCount, isLoading: isWishLoading } = useContext(WishListContext) as WishListContextType;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,13 +39,12 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 px-6 md:px-12 ${
-        scrolled ? "bg-white shadow-md py-3" : "bg-slate-100 py-5"
-      }`}>
+      <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 px-6 md:px-12 ${scrolled ? "bg-white shadow-md py-3" : "bg-slate-100 py-5"
+        }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          
+
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group"> 
+          <Link href="/" className="flex items-center gap-2 group">
             <div className="bg-yellow-400 p-2 rounded-lg transition-all duration-300 group-hover:bg-slate-800">
               <i className="fa-solid fa-cart-shopping text-black group-hover:text-yellow-400"></i>
             </div>
@@ -74,20 +74,28 @@ export default function Navbar() {
               <>
                 <Link href="/wishlist" className="relative p-2 text-slate-700 hover:text-red-500 transition-colors">
                   <Heart size={22} strokeWidth={2.5} />
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-1.5 rounded-full border-2 border-white animate-in zoom-in duration-300">
-                    {wishListCount || 0}
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white animate-in zoom-in duration-300">
+                    {isWishLoading ? (
+                      <Loader2 size={10} className="animate-spin" />
+                    ) : (
+                      wishListCount || 0
+                    )}
                   </span>
                 </Link>
-                
+
                 <Link href="/cart" className="relative p-2 text-slate-700 hover:text-yellow-600 transition-colors">
                   <ShoppingBag size={22} strokeWidth={2.5} />
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-1.5 rounded-full border-2 border-white animate-in zoom-in duration-300">
-                    {cartCount || 0}
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white animate-in zoom-in duration-300">
+                    {isCartLoading ? (
+                      <Loader2 size={10} className="animate-spin" />
+                    ) : (
+                      cartCount || 0
+                    )}
                   </span>
                 </Link>
                 <div className="w-[1px] h-6 bg-slate-200 mx-1 hidden md:block"></div>
               </>
-            )} 
+            )}
 
             {/* Auth Logic Dropdown */}
             <DropdownMenu>
@@ -104,17 +112,19 @@ export default function Navbar() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild className="rounded-xl p-3 cursor-pointer">
-                      <Link href="/profile" className="flex items-center w-full"><User className="mr-2 h-4 w-4"/>Profile</Link>
+                      <Link href="/profile" className="flex items-center w-full"><User className="mr-2 h-4 w-4 text-yellow-500" />Profile</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className="rounded-xl p-3 cursor-pointer">
-                      <Link href="/allorders" className="flex items-center w-full"><Package className="mr-2 h-4 w-4"/>My Orders</Link>
+                      <Link href="/allorders" className="flex items-center w-full"><Package className="mr-2 h-4 w-4 text-yellow-500" />My Orders</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-xl p-3 cursor-pointer flex items-center">
-                      <Headset className="mr-2 h-4 w-4"/> Support
+                    <DropdownMenuItem asChild className="rounded-xl p-3 cursor-pointer">
+                      <Link href="/addresses" className="flex items-center w-full">
+                        <MapPin className="mr-2 h-4 w-4 text-yellow-500" /> My Addresses
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => signOut({callbackUrl: '/'})} className="rounded-xl p-3 cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600">
-                      <LogOut className="mr-2 h-4 w-4"/> Log Out
+                    <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="rounded-xl p-3 cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600">
+                      <LogOut className="mr-2 h-4 w-4" /> Log Out
                     </DropdownMenuItem>
                   </>
                 ) : (
@@ -173,7 +183,7 @@ export default function Navbar() {
 
             <div className="mt-auto p-6 border-t bg-slate-50">
               {status === "authenticated" ? (
-                <button onClick={() => signOut({callbackUrl: '/'})} className="flex items-center justify-center gap-3 w-full bg-red-500 text-white p-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">
+                <button onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center justify-center gap-3 w-full bg-red-500 text-white p-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">
                   <LogOut size={18} /> Log Out
                 </button>
               ) : (

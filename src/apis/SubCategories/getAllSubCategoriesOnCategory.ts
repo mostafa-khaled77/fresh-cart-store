@@ -1,7 +1,7 @@
 import { SubCategory } from "@/interfaces/subcategory.interface";
 
 export default async function GetAllSubCategoriesOnCategory(id:string):Promise<SubCategory[]>{
-    let res = await fetch(`${process.env.BASE_URL}/categories/${id}/subcategories` , {
+    let res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/categories/${id}/subcategories` , {
         method:"GET",
         next:{revalidate:60}
     });

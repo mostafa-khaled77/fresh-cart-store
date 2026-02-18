@@ -10,6 +10,7 @@ const handler = NextAuth({
                 email:{placeholder:'Enter Your Email'},
                 password:{placeholder:'Enter Your Password'}
             },
+
             async authorize(credentials){
                 const res = await fetch(`https://ecommerce.routemisr.com/api/v1/auth/signin`,{
                     method:"POST",
@@ -21,25 +22,28 @@ const handler = NextAuth({
                 if('token' in payload){
                     return{
                         id:payload.user.email,
-                        user:payload.user,
-                        token:payload.token
+                        user: payload.user,
+                        token: payload.token
                     }
                 }else{
                     throw new Error(payload.message)
                 }
-            }
-        })
+}})
     ],
     callbacks:{
-        jwt :({token , user})=>{
+        jwt :({token , user , trigger, session})=>{
             if(user){
-                token.user = user.user,
-                token.token = user.token
+                token.user = user.user;
+                token.token = user.token;
+            }
+            if (trigger === "update" && session) {
+                if (session.user) token.user = session.user; 
+                if (session.token) token.token = session.token; 
             }
             return token;
         },
-        session:({session , token})=>{
-            session.user = token.user
+        session:({session , token}: any)=>{ 
+            session.user = token.user;
             return session;
         }
     },

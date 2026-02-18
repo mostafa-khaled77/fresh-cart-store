@@ -9,10 +9,23 @@ import { toast } from 'sonner';
 import { CartResponse } from '@/interfaces/CartResponse.interface';
 import React, { useContext } from "react";
 import { CartContext, CartContextType } from "@/context/CartContext";
-import { AddProductToWishlist } from "@/app/_actions/wishlist.actions";
+import { AddProductToWishlist, removeProductFromWishlist } from "@/app/_actions/wishlist.actions";
 import { Loader2, ShoppingCart, Heart, Check } from "lucide-react"; 
 import { WishListContext, WishListContextType } from "@/context/WishListContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 interface ProductCardProps {
   product: Product;
@@ -22,14 +35,32 @@ interface ProductCardProps {
 export default function ProductCard({ product , id }: ProductCardProps) {
   const [status, setStatus] = React.useState<"idle" | "loading" | "success">("idle");
   const [isLoadingHeart, setIsLoadingHeart] = React.useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
   const {setCartCount} = useContext(CartContext) as CartContextType;
-  const {setWishListCount} = useContext(WishListContext) as WishListContextType;
- const productId = id || product._id;
+  const {setWishListCount, wishList, setWishList} = useContext(WishListContext) as WishListContextType;
+  const productId = id || product._id;
+  const { data: session } = useSession(); 
+  const router = useRouter(); 
+  
+  const isInWishlist = wishList.includes(productId);
+
+const checkAuth = () => {
+  if (!session) {
+    setIsAuthModalOpen(true);
+    return false;
+  }
+  return true;
+};
+
   async function handleAddToCart(){
+    if (!checkAuth()) return;
     setStatus("loading");
     const response: CartResponse = await addToCart(productId);
+    console.log(response)
     if(response.status === 'success'){ 
-      setCartCount(response.numOfCartItems);
+      if (response.numOfCartItems !== undefined) {
+        setCartCount(response.numOfCartItems);
+      }
       setStatus("success");
       toast.success("Added to cart! 🛒");
       setTimeout(() => setStatus("idle"), 2000);
@@ -40,21 +71,52 @@ export default function ProductCard({ product , id }: ProductCardProps) {
   }
 
   async function handleAddToWishList(){
+    if (!checkAuth()) return;
     setIsLoadingHeart(true);
-    const data = await AddProductToWishlist(productId);
-    if(data.status === 'success'){ 
-      setWishListCount(data.data.length);
-      toast.success("Added to favorites! ❤️", {
-        style: { background: "#fef2f2", color: "#991b1b", border: "1px solid #fee2e2" }
-      });
-    } else {
-      toast.error(data.message || "Failed To Add");
+    
+    try {
+      if (isInWishlist) {
+        // Remove from wishlist
+        const res = await removeProductFromWishlist(productId);
+        if (res && (res.status === 'success' || res.count !== undefined || res.data)) {
+           // Update local state by filtering out the removed ID
+           const newWishList = wishList.filter(id => id !== productId);
+           setWishList(newWishList);
+           // Update count based on new list length to be accurate
+           setWishListCount(newWishList.length);
+           toast.success("Removed from favorites", {
+             style: { background: "#fef2f2", color: "#991b1b", border: "1px solid #fee2e2" }
+           });
+        } else {
+           toast.error("Failed to remove");
+        }
+      } else {
+        // Add to wishlist
+        const data = await AddProductToWishlist(productId);
+        console.log(data)
+        if(data.status === 'success'){ 
+          if (data.data && Array.isArray(data.data)) {
+            setWishListCount(data.data.length);
+            setWishList(data.data);
+          }
+          toast.success("Added to favorites! ❤️", {
+            style: { background: "#fef2f2", color: "#991b1b", border: "1px solid #fee2e2" }
+          });
+        } else {
+          toast.error(data.message || "Failed To Add");
+        }
+      }
+    } catch (error) {
+      toast.error("Something went wrong");
+    } finally {
+      setIsLoadingHeart(false);
     }
-    setIsLoadingHeart(false);
   }
 
   return (
+    <>
     <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Card className='group py-3 hover:shadow-2xl transition-all duration-500 border-none shadow-md overflow-hidden flex flex-col h-full bg-white'>
         
         <Link href={`/products/${product.id}`} className="flex-grow">
@@ -124,19 +186,61 @@ export default function ProductCard({ product , id }: ProductCardProps) {
             disabled={isLoadingHeart} 
             onClick={handleAddToWishList} 
             className={`flex items-center justify-center w-11 h-11 border rounded-xl transition-all duration-300 ${
-              isLoadingHeart ? "bg-slate-50" : "bg-white hover:border-red-500 hover:bg-red-50 text-gray-400 hover:text-red-500 shadow-sm"
-            }`}
+              isInWishlist
+                ? "bg-red-50 border-red-500"
+                : "bg-white hover:border-red-500 hover:bg-red-50 shadow-sm"
+            } ${isLoadingHeart ? "bg-slate-50" : ""}`}
           >
             {isLoadingHeart ? (
               <Loader2 size={18} className="animate-spin text-red-500" />
             ) : (
               <motion.div whileTap={{ scale: 1.4 }}>
-                <Heart size={18} />
+                <Heart 
+                  size={18} 
+                  className={`transition-colors duration-300 ${isInWishlist ? "fill-red-500 text-red-500" : "text-gray-400 group-hover:text-red-500"}`} 
+                />
               </motion.div>
             )}
           </Button>
         </div>
       </Card>
     </motion.div>
+
+      <AlertDialog open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen}>
+  <AlertDialogContent className="max-w-[380px] rounded-[2rem] p-8 border-none bg-white shadow-2xl animate-in fade-in zoom-in duration-300">
+    
+    <AlertDialogHeader className="space-y-3">
+      {/* أيقونة بسيطة وصغيرة */}
+      <div className="mx-auto w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center">
+        <Heart size={20} className="text-slate-900" />
+      </div>
+      
+      <AlertDialogTitle className="text-xl font-black text-center text-slate-900 tracking-tight">
+        Login Required
+      </AlertDialogTitle>
+      
+      <AlertDialogDescription className="text-center text-slate-500 text-sm font-medium leading-relaxed">
+        Please sign in to add this item to your cart or wishlist.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+
+    <div className="flex flex-col gap-2 mt-6">
+      <Button 
+        onClick={() => router.push(`/login?callbackUrl=${window.location.href}`)}
+        className="w-full bg-slate-900 text-white rounded-xl py-6 font-bold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all"
+      >
+        Sign In
+      </Button>
+      
+      <AlertDialogCancel className="w-full border-none shadow-none text-slate-400 hover:text-slate-900 font-bold text-[10px] uppercase tracking-widest bg-transparent hover:bg-transparent">
+        Back to shopping
+      </AlertDialogCancel>
+    </div>
+
+  </AlertDialogContent>
+</AlertDialog>
+    </motion.div>
+  
+</>
   )
 }

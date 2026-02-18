@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import Navbar from "../Navbar/Navbar";
 import { CartProvider } from "@/context/CartContext";
 import { WishListProvider } from "@/context/WishListContext";
+import Footer from "../Footer/Footer";
 
 export default function AppProvider({ children }: { children: ReactNode }) {
   return (
@@ -12,9 +13,10 @@ export default function AppProvider({ children }: { children: ReactNode }) {
       <SessionProvider>
         <WishListProvider>
           <CartProvider>
-            <Toaster position="top-center" richColors />
+            <Toaster position="bottom-center" richColors />
             <Navbar />
             {children}
+            <Footer />
           </CartProvider>
         </WishListProvider>
       </SessionProvider>

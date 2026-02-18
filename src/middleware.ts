@@ -12,6 +12,7 @@ export const config = {
     "/wishlist/:path*",
     "/profile/:path*",
     "/checkout/:path*",
-    "/orders/:path*",
+    "/allorders/:path*",
+    "/addresses/:path*",
   ],
 };

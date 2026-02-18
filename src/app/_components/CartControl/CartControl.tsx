@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Plus, Minus, Loader2 } from "lucide-react";
 import { CartContext, CartContextType } from "@/context/CartContext";
+import { useRouter } from "next/navigation";
 
 export default function CartControl({ productId, count }: { productId: string, count: number }) {
     const [isUpdating, setIsUpdating] = useState(false);
     const [isRemoving, setIsRemoving] = useState(false);
+    const router = useRouter()
     
     const { setCartCount } = useContext(CartContext) as CartContextType;
     
@@ -20,6 +22,7 @@ export default function CartControl({ productId, count }: { productId: string, c
         if (res.status === "success") {
             toast.success("Updated!");
             setCartCount(res.numOfCartItems); 
+            router.refresh();
         } else {
             toast.error("Update failed");
         }
@@ -37,6 +40,7 @@ export default function CartControl({ productId, count }: { productId: string, c
             if (res.status === "success") {
                 toast.success("Item removed");
                 setCartCount(res.numOfCartItems); 
+                router.refresh();
             } else {
                 toast.error("Remove failed");
             }

@@ -2,7 +2,7 @@ import { SubCategory } from './../../interfaces/subcategory.interface';
 
 
 export default async function getAllSubCategories(categoryId?: string):Promise<SubCategory[]> {
-    const baseUrl = `${process.env.BASE_URL}/subcategories`;
+    const baseUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/subcategories`;
     const url = categoryId ? `${baseUrl}?category=${categoryId}` : baseUrl;
 
     let res = await fetch(url, {
